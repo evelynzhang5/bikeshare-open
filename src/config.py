@@ -42,6 +42,13 @@ TIME_INDEX_COLS = {"instant", "yr", "days_since_2011"}
 #    build our own lags from the target and test those instead.
 UNVERIFIED_COLS = {"cnt_2d_bfr"}
 
+# Recognized raw covariates. Some calendar fields are replaced by
+# encodings derived from dteday in the current feature pipeline.
+RAW_COVARIATE_COLS = {
+    "season", "mnth", "holiday", "weekday", "workday", "weather",
+    "temp", "atemp", "hum", "windspeed",
+}
+
 # What feature_columns() and the tests actually enforce.
 FORBIDDEN = LEAKAGE_COLS | TIME_INDEX_COLS | UNVERIFIED_COLS
 

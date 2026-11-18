@@ -19,6 +19,15 @@ def feats(raw):
     return build_features(raw)
 
 
+from src.config import FORBIDDEN, RAW_COVARIATE_COLS
+
+
+def test_raw_columns_are_classified(raw):
+    classified = FORBIDDEN | RAW_COVARIATE_COLS | {"dteday"}
+    unknown = set(raw.columns) - classified
+    assert not unknown, f"Unclassified raw columns: {sorted(unknown)}"
+
+
 def test_calendar_is_complete_before_lagging(raw):
     """The reindexed frame must have no gaps, or the lags are wrong."""
     grid = reindex_to_calendar(raw)
