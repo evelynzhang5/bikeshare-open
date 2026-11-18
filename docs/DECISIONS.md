@@ -16,3 +16,5 @@ Agents append here via the `/new-feature` skill; you append here by hand.
 [2026-11-17] Added an explicit raw-column classification check so newly introduced columns require review before use.
 
 [2026-11-17] Added an unknown-weather regression test so removing the encoder's explicit error check will produce a failing test.
+
+[2026-11-18] Added seed-fault, drafted with ChatGPT assistance, to standardize fault injection, evidence capture, and restoration; documented its usage in CLAUDE.md.
