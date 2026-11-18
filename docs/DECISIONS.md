@@ -10,3 +10,5 @@ Agents append here via the `/new-feature` skill; you append here by hand.
 - Report mean and persistence baselines with every score. Persistence (test R^2 0.510, MAE 840) is within 0.07 R^2 of ridge and beats it on MAE; that caveat goes in the report.
 
 [2026-11-17] Switched from nvfp4 variant after observing high memory use. Configured Ollama settings: one loaded model, one parallel request, Flash Attention enabled, and q8_0 KV cache.
+
+[2026-11-17] Added cnt_roll_3 (three-day historical demand average): uses only the three previous calendar days (d-1, d-2, d-3), all known at prediction time for date d; test suite confirms strict temporality and row counts are 714 rows with 15 features.
