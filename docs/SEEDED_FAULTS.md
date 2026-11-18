@@ -130,3 +130,139 @@ FAILED tests/test_leakage.py::test_no_forbidden_features - AssertionError: fo...
 One corrective Edit (reverting the `or c == "casual"` line) restored the original code. The PostToolUse hook error above is the same as what was displayed when the fault was injected. No additional edits were needed.
 
 **Passing test output:** After repair, `python -m pytest tests/test_leakage.py -q` showed `9 passed in 0.60s`.
+
+## rolling: include today's count in cnt_roll_7
+
+**Argument:** `rolling`
+
+**Starting commit:** `7518747096a9d3e3f25225e35438b11fd8c7517a`
+
+**Runtime observed:** Claude Code 2.1.327; model alias `bikeshare-coder`.
+
+**Fault:** Removing only `.shift(1)` from `cnt_roll_7` made its window include the current day's count and the previous six calendar days, rather than the seven days strictly before prediction. Other features, including `cnt_roll_3`, were preserved.
+
+**Repair count:** One corrective Edit restored `.shift(1)`. This counts corrective edits after the hook detected the fault, not setup discussion or tool calls. The user approved the restoration edit.
+
+### Passing baseline — saved output
+
+```text
+.........                                                                [100%]
+9 passed in 0.94s
+```
+
+### Fault capture and restoration commands
+
+```bash
+# Save the fault diff after the Edit tool introduced it.
+git --no-pager diff HEAD -- src/features.py > /tmp/bikeshare-rolling.diff && echo "Diff saved to /tmp/bikeshare-rolling.diff"
+
+# Capture the failing tests before the corrective Edit.
+set -o pipefail
+python -m pytest -q tests/test_leakage.py 2>&1 | tee /tmp/bikeshare-rolling-fail.txt; echo "Exit code: ${PIPESTATUS[0]}"
+
+# The Edit tool then restored .shift(1); capture passing tests.
+set -o pipefail
+python -m pytest -q tests/test_leakage.py 2>&1 | tee /tmp/bikeshare-rolling-pass.txt; echo "Exit code: ${PIPESTATUS[0]}"
+
+# Check restoration.
+cmp src/features.py /tmp/bikeshare-rolling-original.py && echo "✓ File byte-identical to original" || echo "✗ Files differ"
+git --no-pager diff --exit-code HEAD -- src/features.py; echo "Exit code: ${PIPESTATUS[0]}"
+```
+
+The failing and passing test commands enabled `pipefail`, but their trailing `echo` commands did not preserve pytest's status as the final shell status. The visible `Exit code:` lines were blank; no numeric exit status is claimed from them. The pytest logs establish the test outcomes. The baseline's printed success banner alone was not used as evidence.
+
+### Automatic PostToolUse hook — original terminal transcript
+
+The following block is copied unchanged from the terminal transcript supplied on 2026-11-18. It retains Claude Code's UI prefix, indentation, and line wrapping; it is not a separately captured raw stderr file. The hook ran automatically after the fault Edit, not through a manual hook invocation.
+
+```text
+  ⎿  PostToolUse:Edit hook reported a problem
+     [${CLAUDE_PROJECT_DIR}/.claude/hooks/check_leakage.sh]: Leakage tests failed
+     after editing /Users/evelynzhang/Downloads/bikeshare-open/src/features.py:
+     [714 rows x 29 columns]
+
+         def test_rolling_mean_excludes_today(feats):
+             """cnt_roll_7 must be the mean of the 7 calendar days *before*
+     today."""
+             by_date = feats.set_index("dteday")[TARGET]
+             date = feats.dteday.iloc[200]
+             window = [date - pd.Timedelta(days=k) for k in range(1, 8)]
+             if all(d in by_date.index for d in window):
+                 expected = sum(by_date[d] for d in window) / 7
+     >           assert feats.set_index("dteday").cnt_roll_7[date] ==
+     pytest.approx(expected)
+     E           assert np.float64(4389.0) == 4414.857142857143 ± 0.00441486
+     E
+     E             comparison failed
+     E             Obtained: 4389.0
+     E             Expected: 4414.857142857143 ± 0.00441486
+
+     tests/test_leakage.py:57: AssertionError
+     ============================ short test summary info
+     ============================
+     FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - assert
+     np.flo...
+     1 failed, 8 passed in 0.73s
+```
+
+### Actual fault diff — copied from /tmp/bikeshare-rolling.diff
+
+```diff
+diff --git a/src/features.py b/src/features.py
+index d8cc103..97a81f4 100644
+--- a/src/features.py
++++ b/src/features.py
+@@ -73,7 +73,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
+     # If you add a longer lag, raise LAG_WARMUP in src/config.py.
+     out["cnt_lag_1"] = out[TARGET].shift(1)
+     out["cnt_lag_7"] = out[TARGET].shift(LAG_WARMUP)
+-    out["cnt_roll_7"] = out[TARGET].shift(1).rolling(LAG_WARMUP).mean()
++    out["cnt_roll_7"] = out[TARGET].rolling(LAG_WARMUP).mean()
+     out["cnt_roll_3"] = out[TARGET].shift(1).rolling(3).mean()
+ 
+     return out.dropna().reset_index(drop=True)
+```
+
+### Failing tests — copied from /tmp/bikeshare-rolling-fail.txt
+
+```text
+....F....                                                                [100%]
+=================================== FAILURES ===================================
+_______________________ test_rolling_mean_excludes_today _______________________
+
+feats =         dteday  instant  season  ...  cnt_lag_7   cnt_roll_7   cnt_roll_3
+0   2011-01-10     10.0  WINTER  ...     134....428571  2183.333333
+713 2012-12-31    731.0  WINTER  ...      920.0  1789.857143  2077.333333
+
+[714 rows x 29 columns]
+
+    def test_rolling_mean_excludes_today(feats):
+        """cnt_roll_7 must be the mean of the 7 calendar days *before* today."""
+        by_date = feats.set_index("dteday")[TARGET]
+        date = feats.dteday.iloc[200]
+        window = [date - pd.Timedelta(days=k) for k in range(1, 8)]
+        if all(d in by_date.index for d in window):
+            expected = sum(by_date[d] for d in window) / 7
+>           assert feats.set_index("dteday").cnt_roll_7[date] == pytest.approx(expected)
+E           assert np.float64(4389.0) == 4414.857142857143 ± 0.00441486
+E             
+E             comparison failed
+E             Obtained: 4389.0
+E             Expected: 4414.857142857143 ± 0.00441486
+
+tests/test_leakage.py:57: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - assert np.fl...
+1 failed, 8 passed in 0.75s
+```
+
+### Passing tests after repair — copied from /tmp/bikeshare-rolling-pass.txt
+
+```text
+.........                                                                [100%]
+9 passed in 0.46s
+```
+
+### Restoration
+
+The session's `cmp` check printed `✓ File byte-identical to original`; the Git comparison displayed no diff. Before appending this record, the recording script also compared `src/features.py` byte-for-byte with both `/tmp/bikeshare-rolling-original.py` and the source at the recorded starting commit. The recording script did not rerun tests.
