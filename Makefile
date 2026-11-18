@@ -22,11 +22,15 @@ clean:
 # Builds `bikeshare-coder`: the base model plus a 64k context window, which
 # Claude Code needs and Ollama does not give you by default. Pick a larger
 # BASE if your machine has the memory (see README.md).
-BASE ?= qwen3.5:9b
+BASE ?= qwen3.5:9b-q4_K_M
 
 model:
 	ollama pull $(BASE)
-	sed "s|^FROM .*|FROM $(BASE)|" model/Modelfile | ollama create bikeshare-coder -f -
+	@set -eu; \
+	bikeshare_modelfile=$$(mktemp); \
+	trap 'rm -f "$$bikeshare_modelfile"' EXIT; \
+	sed "s|^FROM .*|FROM $(BASE)|" model/Modelfile > "$$bikeshare_modelfile"; \
+	ollama create bikeshare-coder -f "$$bikeshare_modelfile"
 
 check-model:
 	bash model/check.sh
