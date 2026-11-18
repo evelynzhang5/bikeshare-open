@@ -266,3 +266,144 @@ FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - assert np.fl...
 ### Restoration
 
 The session's `cmp` check printed `✓ File byte-identical to original`; the Git comparison displayed no diff. Before appending this record, the recording script also compared `src/features.py` byte-for-byte with both `/tmp/bikeshare-rolling-original.py` and the source at the recorded starting commit. The recording script did not rerun tests.
+
+## weather: suppress the unknown-label exception
+
+**Argument:** `weather`
+
+**Starting commit:** `6675e4d7936adaf0270c3089b8c183e9bb1abbaa`
+
+**Claude session:** `b6bead52-ba07-4789-b3c2-68230dd6f0e0`
+
+**Evidence recording:** A ChatGPT-generated Python recorder copied the existing logs and original saved hook message; it did not rerun the experiment.
+
+**Fault:** The Edit tool replaced only the unknown-label `raise ValueError(...)` in `encode_weather()` with `pass`. The test supplied `UNEXPECTED`, but the function returned without the required exception. Raw data and tests were not changed for this experiment.
+
+**Repair count:** The session reported one corrective Edit to restore the original raise statement. This counts repair edits after fault injection, not preliminary discussion or shell calls. The restored source was independently compared byte-for-byte with the backup and the recorded Git commit before this record was appended.
+
+### Passing baseline — original saved output
+
+```text
+.........                                                                [100%]
+9 passed in 1.05s
+```
+
+### Recorded Bash commands
+
+The following command text is copied directly from the session's relevant Bash tool calls, in recorded order. Repeated serialized copies of the same tool-call ID are included only once. These commands were not rerun while preparing this record.
+
+Command 1:
+
+```bash
+git --no-pager diff --exit-code HEAD -- src/features.py
+```
+
+Command 2:
+
+```bash
+git rev-parse HEAD > /tmp/bikeshare-weather-start.txt && git show HEAD:src/features.py > /tmp/bikeshare-weather-original.py && echo "Starting state saved:" && cat /tmp/bikeshare-weather-start.txt
+```
+
+Command 3:
+
+```bash
+set -o pipefail && python -m pytest -q tests/test_leakage.py 2>&1 | tee /tmp/bikeshare-weather-baseline.txt
+```
+
+Command 4:
+
+```bash
+git --no-pager diff HEAD -- src/features.py > /tmp/bikeshare-weather.diff && echo "Diff saved to /tmp/bikeshare-weather.diff:" && cat /tmp/bikeshare-weather.diff
+```
+
+Command 5:
+
+```bash
+set -o pipefail && python -m pytest -q tests/test_leakage.py 2>&1 | tee /tmp/bikeshare-weather-fail.txt
+```
+
+Command 6:
+
+```bash
+set -o pipefail && python -m pytest -q tests/test_leakage.py 2>&1 | tee /tmp/bikeshare-weather-pass.txt
+```
+
+Command 7:
+
+```bash
+cmp src/features.py /tmp/bikeshare-weather-original.py && echo "✓ Files match: src/features.py equals original" || echo "✗ Files differ"
+```
+
+Command 8:
+
+```bash
+git --no-pager diff --exit-code HEAD -- src/features.py && echo "✓ Git diff is clean - file restored successfully" || echo "✗ File has changes from HEAD"
+```
+
+### Automatic PostToolUse hook — original saved message
+
+Recovered from the saved Claude session. It appeared in 3 nested/wrapped representations of the same failure message; these are not counted as separate fault experiments. The innermost recorded message is copied unchanged below, including its hook-command prefix, and saved to `/tmp/bikeshare-weather-hook.txt`. This was the automatic Edit hook, not a manually invoked hook or the separate pytest capture.
+
+```text
+[${CLAUDE_PROJECT_DIR}/.claude/hooks/check_leakage.sh]: Leakage tests failed after editing /Users/evelynzhang/Downloads/bikeshare-open/src/features.py:
+........F                                                                 [100%]
+=================================== FAILURES ====================================
+_______________________ test_unknown_weather_label_raises _______________________
+
+    def test_unknown_weather_label_raises():
+        labels = pd.Series(["GOOD", "MISTY", "BAD", "UNEXPECTED"])
+>       with pytest.raises(ValueError, match="unmapped weather labels"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_leakage.py:80: Failed
+============================ short test summary info ============================
+FAILED tests/test_leakage.py::test_unknown_weather_label_raises - Failed: DID ...
+1 failed, 8 passed in 0.71s
+```
+
+### Actual fault diff — /tmp/bikeshare-weather.diff
+
+```diff
+diff --git a/src/features.py b/src/features.py
+index d8cc103..63a2660 100644
+--- a/src/features.py
++++ b/src/features.py
+@@ -27,7 +27,7 @@ def encode_weather(series: pd.Series) -> pd.Series:
+     known = series.dropna()
+     unknown = set(known.unique()) - set(WEATHER_ORDER)
+     if unknown:
+-        raise ValueError(f"unmapped weather labels: {sorted(unknown)}")
++        pass
+     return series.map(WEATHER_ORDER).astype(float)
+ 
+ 
+```
+
+### Failing tests — /tmp/bikeshare-weather-fail.txt
+
+```text
+........F                                                                [100%]
+=================================== FAILURES ===================================
+______________________ test_unknown_weather_label_raises _______________________
+
+    def test_unknown_weather_label_raises():
+        labels = pd.Series(["GOOD", "MISTY", "BAD", "UNEXPECTED"])
+>       with pytest.raises(ValueError, match="unmapped weather labels"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_leakage.py:80: Failed
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_unknown_weather_label_raises - Failed: DID...
+1 failed, 8 passed in 0.52s
+```
+
+### Passing tests after repair — /tmp/bikeshare-weather-pass.txt
+
+```text
+.........                                                                [100%]
+9 passed in 0.46s
+```
+
+### Restoration
+
+The separate Terminal check printed `Source restored byte-for-byte: True`. The recorder also checked the current source against both `/tmp/bikeshare-weather-original.py` and `src/features.py` at the starting commit. No tests or forecasting models were run by the recorder. Numeric shell exit statuses are not inferred from the model's summary; the original test results are preserved above.
