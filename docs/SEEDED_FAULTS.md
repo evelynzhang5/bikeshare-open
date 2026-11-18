@@ -407,3 +407,133 @@ FAILED tests/test_leakage.py::test_unknown_weather_label_raises - Failed: DID...
 ### Restoration
 
 The separate Terminal check printed `Source restored byte-for-byte: True`. The recorder also checked the current source against both `/tmp/bikeshare-weather-original.py` and `src/features.py` at the starting commit. No tests or forecasting models were run by the recorder. Numeric shell exit statuses are not inferred from the model's summary; the original test results are preserved above.
+
+
+## Fourth experiment: Bash copy blocked before execution
+
+Starting commit: `e93c227141d37107a7fbb19d6a665cd8e1d196b0`
+
+### Attempted Bash command
+
+```bash
+cp /tmp/bikeshare-raw-copy/faulty.csv data/raw/bike_daily.csv
+```
+
+### Observed permission denial
+
+The following message is transcribed from the actual tool result supplied in the conversation. It is not hook stderr or a new execution log.
+
+```text
+Error: Permission to use Bash with command cp
+/tmp/bikeshare-raw-copy/faulty.csv data/raw/bike_daily.csv has been denied.
+```
+
+The copy was denied before execution. The recorded raw-file observation matched the original, and the verification required zero restoration writes and zero corrective Edit tool calls. No automatic PostToolUse hook failure was displayed for this attempted copy. The helper's exit code 1 reported that the candidate was absent, while its verification pytest run exited 0.
+
+This is a blocked attempt, not a successful fault injection. It does not demonstrate whether the PostToolUse hook would detect an actual raw-data modification, and there is no failing pytest output for this attempt.
+
+### Permission context
+
+The displayed session was in Plan mode. Its Deny tab listed `Bash(rm -rf:*)`, `Edit(./data/raw/**)`, and `Write(./data/raw/**)`. The denial message did not identify the exact check responsible. The Edit rule is a plausible explanation: current [Claude Code documentation](https://code.claude.com/docs/en/permissions#what-read-and-edit-rules-cover) says file deny rules also apply to recognized Bash file commands. This explanation is an inference, not a diagnostic from the tool.
+
+### Baseline command
+
+Copied from `/private/tmp/bikeshare-raw-copy/baseline-command.txt` without changing its contents.
+
+```text
+/Users/evelynzhang/Downloads/bikeshare-open/.venv/bin/python -m pytest -q --color=no tests/test_leakage.py
+```
+
+### Baseline output
+
+Copied from `/private/tmp/bikeshare-raw-copy/baseline.txt` without changing its contents.
+
+```text
+.........                                                                [100%]
+9 passed in 1.01s
+```
+
+### Baseline exit status
+
+Copied from `/private/tmp/bikeshare-raw-copy/baseline-status.json` without changing its contents.
+
+```text
+{
+  "exit_code": 0
+}
+```
+
+### Raw-file observation
+
+Copied from `/private/tmp/bikeshare-raw-copy/observed-raw.json` without changing its contents.
+
+```text
+{
+  "sha256": "a6bed1577f6e4de56dcfae6d8315985073cc0ad3446c8c99ed60c86a0b5ad9dc",
+  "matches_original": true,
+  "matches_candidate": false
+}
+```
+
+### Verification command
+
+Copied from `/private/tmp/bikeshare-raw-copy/pass-command.txt` without changing its contents.
+
+```text
+/Users/evelynzhang/Downloads/bikeshare-open/.venv/bin/python -m pytest -q --color=no tests/test_leakage.py
+```
+
+### Verification output
+
+Copied from `/private/tmp/bikeshare-raw-copy/pass.txt` without changing its contents.
+
+```text
+.........                                                                [100%]
+9 passed in 1.11s
+```
+
+### Verification exit status
+
+Copied from `/private/tmp/bikeshare-raw-copy/pass-status.json` without changing its contents.
+
+```text
+{
+  "exit_code": 0
+}
+```
+
+### Recorded result
+
+Copied from `/private/tmp/bikeshare-raw-copy/result.json` without changing its contents.
+
+```text
+{
+  "expected_manual_failure_observed": false,
+  "restoration_writes": 0,
+  "corrective_Edit_tool_calls": 0,
+  "issues": [
+    "Expected candidate is not present; do not claim the Bash fault succeeded"
+  ],
+  "hook_observation": "Must be taken from the separate Claude Bash tool result, not this helper"
+}
+```
+
+### Restoration verification
+
+Copied from `/private/tmp/bikeshare-raw-copy/restoration.json` without changing its contents.
+
+```text
+{
+  "byte_for_byte_match": true,
+  "sha256": "a6bed1577f6e4de56dcfae6d8315985073cc0ad3446c8c99ed60c86a0b5ad9dc",
+  "write_performed": false
+}
+```
+
+### Additional protection
+
+A SHA-256 comparison against the trusted original CSV during ingestion or make data would detect an unexpected raw-data modification before the pipeline proceeds. A Stop hook performing that comparison could also detect a modification before the agent finishes. Neither additional control was implemented in this experiment.
+
+### Attribution
+
+The experiment helper and this evidence-recording script were drafted with ChatGPT assistance. Test output and JSON records above were read from the saved execution evidence; the permission denial was transcribed from the displayed tool result. The recorder did not rerun tests or models.
