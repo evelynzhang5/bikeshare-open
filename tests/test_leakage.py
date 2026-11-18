@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from src.config import FORBIDDEN, TARGET
-from src.features import build_features, feature_columns
+from src.features import build_features, feature_columns, encode_weather
 from src.ingest import load_raw
 
 
@@ -73,3 +73,9 @@ def test_cnt_roll_3_uses_only_previous_days(feats):
     expected = (4258 + 4342 + 5084) / 3
     actual = by_date.loc[pd.Timestamp("2011-07-15"), "cnt_roll_3"]
     assert actual == pytest.approx(expected)
+
+
+def test_unknown_weather_label_raises():
+    labels = pd.Series(["GOOD", "MISTY", "BAD", "UNEXPECTED"])
+    with pytest.raises(ValueError, match="unmapped weather labels"):
+        encode_weather(labels)

@@ -14,3 +14,5 @@ Agents append here via the `/new-feature` skill; you append here by hand.
 [2026-11-17] Added cnt_roll_3 (three-day historical demand average): uses only the three previous calendar days (d-1, d-2, d-3), all known at prediction time for date d; test suite confirms strict temporality and row counts are 714 rows with 15 features.
 
 [2026-11-17] Added an explicit raw-column classification check so newly introduced columns require review before use.
+
+[2026-11-17] Added an unknown-weather regression test so removing the encoder's explicit error check will produce a failing test.
