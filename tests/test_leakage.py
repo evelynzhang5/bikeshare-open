@@ -64,3 +64,12 @@ def test_no_missing_values(feats):
 def test_dates_are_sorted_and_unique(feats):
     assert feats.dteday.is_monotonic_increasing
     assert feats.dteday.is_unique
+
+
+def test_cnt_roll_3_uses_only_previous_days(feats):
+    assert "cnt_roll_3" in feats.columns, "cnt_roll_3 has not been implemented"
+    by_date = feats.set_index("dteday")
+    # Raw counts: July 12 = 4258, July 13 = 4342, July 14 = 5084.
+    expected = (4258 + 4342 + 5084) / 3
+    actual = by_date.loc[pd.Timestamp("2011-07-15"), "cnt_roll_3"]
+    assert actual == pytest.approx(expected)
