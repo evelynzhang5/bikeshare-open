@@ -24,14 +24,57 @@ if ! ollama show "$MODEL" 2>/dev/null | grep -qi "tools"; then
   echo "WARN: '$MODEL' does not advertise tool support; Claude Code needs it." >&2
 fi
 
-# One real request through the Anthropic-compatible endpoint, with a tool,
-# so a broken install fails here and not twenty minutes into Step 2.
-resp=$(curl -fsS "$HOST/v1/messages" \
-  -H "content-type: application/json" -H "x-api-key: ollama" -H "anthropic-version: 2023-06-01" \
-  -d "{\"model\":\"$MODEL\",\"max_tokens\":64,\"tools\":[{\"name\":\"ping\",\"description\":\"reply tool\",\"input_schema\":{\"type\":\"object\",\"properties\":{}}}],\"messages\":[{\"role\":\"user\",\"content\":\"Call the ping tool.\"}]}" 2>&1)
-if ! printf '%s' "$resp" | grep -q '"tool_use"'; then
-  echo "WARN: the model answered but did not call the tool. Agentic steps may be unreliable." >&2
-  echo "      raw: $(printf '%s' "$resp" | head -c 300)" >&2
+# Check that the model returns a real ping tool call.
+payload=$(python -c '
+import json, sys
+print(json.dumps({
+    "model": sys.argv[1],
+    "max_tokens": 1024,
+    "thinking": {"type": "disabled"},
+    "tools": [{
+        "name": "ping",
+        "description": "Call this tool to check connectivity.",
+        "input_schema": {"type":"object","properties":{}}
+    }],
+    "messages": [{
+        "role": "user",
+        "content": "Call the ping tool now."
+    }]
+}))
+' "$MODEL") || exit 1
+
+if resp=$(curl -fsS --max-time 180 "$HOST/v1/messages" \
+    -H "Content-Type: application/json" \
+    -H "x-api-key: ollama" \
+    -H "anthropic-version: 2023-06-01" \
+    --data-binary "$payload"); then
+    :
+else
+    curl_status=$?
+    echo "FAIL: model request failed (curl exit $curl_status)." >&2
+    exit 1
 fi
 
-echo "OK model: $MODEL at $HOST, num_ctx=$ctx, tool call works."
+if ! printf '%s' "$resp" | python -c '
+import json, sys
+try:
+    result = json.load(sys.stdin)
+except (ValueError, UnicodeError) as exc:
+    print(f"FAIL: invalid JSON response: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+blocks = result.get("content") if isinstance(result, dict) else None
+ok = isinstance(blocks, list) and any(
+    isinstance(block, dict)
+    and block.get("type") == "tool_use"
+    and block.get("name") == "ping"
+    for block in blocks
+)
+if not ok:
+    print("FAIL: response contains no ping tool_use block.", file=sys.stderr)
+    sys.exit(1)
+'; then
+    exit 1
+fi
+
+echo "OK model: $MODEL at $HOST, num_ctx=$ctx, ping tool call returned."
