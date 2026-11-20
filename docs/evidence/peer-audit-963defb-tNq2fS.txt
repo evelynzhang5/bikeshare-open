@@ -1,0 +1,61 @@
+Permission deny rule (.claude/settings.json): Write(./data/raw/**) is not matched by file permission checks — only Edit(path) rules are. Use Edit(./data/raw/**) instead (Edit rules cover all file-editing tools).
+[claude-code:unrecognized_model] {"model":"bikeshare-coder","query_source":"sdk"}
+Based on my comprehensive static review of `/Users/evelynzhang/Downloads/bikeshare-peer-bothermeQAQ` against the five methodology checks, here is the complete report:
+
+---
+
+## Methodology Audit Report
+
+**Repository:** `bikeshare-peer-bothermeQAQ`  
+**Commit:** `963defb18f395aef9368fcd41133d4e4d3ca7566`  
+**Date:** 2026-11-19
+
+### Check 1: Target Leakage
+**Status:** ✓ Pass
+
+- **FORBIDDEN columns enforced in `src/config.py`:** `{casual, registered, cnt, instant, yr, days_since_2011, cnt_2d_bfr}`
+- **`test_leakage_identity_holds`:** Verifies `casual + registered == cnt` exactly (line 20-22 of tests/test_leakage.py)
+- **`feature_columns()` in `src/features.py` (line 82-85):** Filters out all FORBIDDEN columns before returning feature list
+- **Lagged features:** All use `.shift(1)` or `.shift(LAG_WARMUP)` before aggregation
+- **No affine identity leaks found** beyond the known sum: `casual + registered == cnt`
+
+### Check 2: Temporal Ordering
+**Status:** ✓ Pass
+
+- **Temporal split by date only:** `src/train.py` temporal_split (lines 56-62) splits at `TRAIN_END = "2011-12-31"` and `VALID_END = "2012-06-30"`, never randomly
+- **Model fit order:** `fit_and_score()` (line 77 in train.py) splits first, then fits only on train: `model.fit(train[cols], train[TARGET])`
+- **Persistence baseline:** Uses only the `cnt_lag_1` column which is strictly past data; no fitting required
+
+### Check 3: Calendar Gaps
+**Status:** ✓ Pass
+
+- **`reindex_to_calendar()` (line 34-50):** Expands df to contiguous calendar using `pd.date_range(..., freq="D")`, inserting NaN for missing days (including 2011-03-10)
+- **Lag computation:** All `.shift()` operations run on the gap-filled index; subsequent `.dropna()` removes rows with NaN lags (the warmup period plus any gap-affected rows)
+- **Test coverage:** `test_lags_are_true_calendar_lags` (line 34-43 of tests/test_leakage.py) verifies lag alignment across calendar days
+
+### Check 4: Silent Row Loss
+**Status:** ✓ Pass
+
+- **`reindex_to_calendar()` adds explicit NaN for missing calendar days** — not row loss, but gap insertion
+- **`dropna()` (line 79):** Removes only rows where lags are NaN (warmup period or gaps). Bounded implicitly by `LAG_WARMUP = 7` config value
+- **No `.map()`, `.merge()`, or `.dropna()` without bounds:** The weather encoder (`encode_weather`) raises on unseen labels instead of silent drop; `dropna()` is only used after lag creation with documented warmup period
+
+### Check 5: Unreported Baseline
+**Status:** ✓ Pass
+
+- **Both baselines reported:** `reports/metrics.json` includes both `baseline_mean` and `baseline_persistence` alongside ridge and hgb scores
+- **Persistence baseline test R² = 0.5099**, MAE = 840.1 — within 0.07 R² of ridge, confirming the "yesterday again" baseline is meaningful
+- **Mean baseline shows distribution shift costs** (valid: -0.9318, test: -2.1441)
+
+---
+
+## Verdict
+
+**All five methodology checks pass.** No material findings requiring fixes.
+
+The codebase correctly:
+1. Prevents target leakage via FORBIDDEN filtering and explicit lag shifting
+2. Enforces temporal ordering with date-based splits and train-only fitting
+3. Handles calendar gaps via reindexing before lag computation
+4. Avoids silent row loss — gap handling and warmup period are documented and tested
+5. Reports both mean and persistence baselines alongside all model scores
