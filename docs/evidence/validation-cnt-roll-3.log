@@ -1,0 +1,11 @@
+without_feature: 14 features
+  baseline_mean: validation R2=-0.9318, MAE=2002.2
+  baseline_persistence: validation R2=0.4507, MAE=900.6
+  ridge: validation R2=0.6475, MAE=832.9
+  hgb: validation R2=0.2185, MAE=1296.6
+with_feature: 15 features
+  baseline_mean: validation R2=-0.9318, MAE=2002.2
+  baseline_persistence: validation R2=0.4507, MAE=900.6
+  ridge: validation R2=0.6439, MAE=836.5
+  hgb: validation R2=0.1983, MAE=1311.6
+OK validation: 348 train, 182 valid; 0 held-out predictions -> validation-cnt-roll-3.json

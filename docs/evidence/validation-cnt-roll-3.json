@@ -1,0 +1,118 @@
+{
+  "scope": "2011 training / H1 2012 validation only",
+  "source_commit_label": "896052fd30106de7ae7b6efe0f20a780dffb55d1",
+  "source_sha256": {
+    "requirements.txt": "7c3d9f546b45089b5026772eabb73931ab08848c861cf4aa7b84b80db03cdd4f",
+    "src/config.py": "1eae118330f3b63de7a593a5639649451f98566599502e76500347f1b26cce1a",
+    "src/ingest.py": "e1f632efec9489faac641d6f8cdeff47d12295503d2178f1b250383a5da71a31",
+    "src/features.py": "fe90841402e4827989c473804b1671615f05eb24f55e41fd5721c30f247e820b",
+    "src/train.py": "bfc80348f3cba155280b7889e378e1808dc7fcf1e1f961f9d6c3a13d9788855e",
+    "src/validate_feature.py": "1f71b5748dc4e187a5103f7e58f2edff8699955bf03ebb4bb8c610b6a7724893"
+  },
+  "raw_sha256": "a6bed1577f6e4de56dcfae6d8315985073cc0ad3446c8c99ed60c86a0b5ad9dc",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "packages": {
+    "numpy": "2.5.3",
+    "pandas": "3.0.5",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1",
+    "joblib": "1.6.0",
+    "threadpoolctl": "3.8.0"
+  },
+  "candidate_feature": "cnt_roll_3",
+  "train_end": "2011-12-31",
+  "validation_end": "2012-06-30",
+  "n_raw_before_validation_end": 544,
+  "n_feature_rows": 530,
+  "n_train": 348,
+  "n_valid": 182,
+  "train_dates": [
+    "2011-01-10",
+    "2011-12-31"
+  ],
+  "valid_dates": [
+    "2012-01-01",
+    "2012-06-30"
+  ],
+  "held_out_predictions": 0,
+  "evaluation": "Sequential one-day prediction with observed prior-day counts",
+  "weather_limit": "Realized same-day weather; not an operational day-ahead weather forecast",
+  "variants": {
+    "without_feature": {
+      "n_features": 14,
+      "features": [
+        "temp",
+        "atemp",
+        "hum",
+        "windspeed",
+        "dayofweek",
+        "is_weekend",
+        "is_holiday",
+        "is_workday",
+        "month_sin",
+        "month_cos",
+        "weather_severity",
+        "cnt_lag_1",
+        "cnt_lag_7",
+        "cnt_roll_7"
+      ],
+      "metrics": {
+        "baseline_mean": {
+          "r2": -0.931779848282773,
+          "mae": 2002.2285587975243
+        },
+        "baseline_persistence": {
+          "r2": 0.45071450848019223,
+          "mae": 900.6043956043956
+        },
+        "ridge": {
+          "r2": 0.6475033849179346,
+          "mae": 832.9039621142638
+        },
+        "hgb": {
+          "r2": 0.2184701774354425,
+          "mae": 1296.576776946281
+        }
+      }
+    },
+    "with_feature": {
+      "n_features": 15,
+      "features": [
+        "temp",
+        "atemp",
+        "hum",
+        "windspeed",
+        "dayofweek",
+        "is_weekend",
+        "is_holiday",
+        "is_workday",
+        "month_sin",
+        "month_cos",
+        "weather_severity",
+        "cnt_lag_1",
+        "cnt_lag_7",
+        "cnt_roll_7",
+        "cnt_roll_3"
+      ],
+      "metrics": {
+        "baseline_mean": {
+          "r2": -0.931779848282773,
+          "mae": 2002.2285587975243
+        },
+        "baseline_persistence": {
+          "r2": 0.45071450848019223,
+          "mae": 900.6043956043956
+        },
+        "ridge": {
+          "r2": 0.6438648392035675,
+          "mae": 836.4529146301163
+        },
+        "hgb": {
+          "r2": 0.19826523924291628,
+          "mae": 1311.557779868441
+        }
+      }
+    }
+  }
+}
