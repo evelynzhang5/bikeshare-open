@@ -1,4 +1,4 @@
-.PHONY: all data features train test clean model check-model
+.PHONY: all data features train test clean model check-model audit
 
 # --- The pipeline ----------------------------------------------------------
 all: data features train
@@ -14,6 +14,9 @@ train:
 
 test:
 	python -m pytest tests/ -q
+
+audit: features
+	python agent/audit.py . --out reports/audit.jsonl
 
 clean:
 	rm -f data/processed/*.parquet reports/metrics.json reports/*.png
