@@ -42,3 +42,8 @@ rides) from calendar, weather, and lagged-demand features.
 
 ## Fault experiments
 - `/seed-fault forbidden|rolling|weather` demonstrates one temporary fault, records real evidence, and restores the original code.
+
+## Validation experiments
+- `python -m src.validate_target --source-commit <sha>` evaluates daily-change targets on H1 only.
+- Reconstruct demand using the known `cnt_lag_1` before scoring; never use today's observed count for reconstruction.
+- Freeze feature and transformation choices before final H2 evaluation; keep committed pipeline metrics untransformed.
