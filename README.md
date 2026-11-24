@@ -136,3 +136,19 @@ response is saved as `reports/audit.failed.jsonl` and returns a nonzero status;
 it is not a completed audit. Review valid findings, address or explain them in
 `REPORT.md`, and commit the real `reports/audit.jsonl`. Do not replace it with
 a hand-written verdict.
+
+
+## Results and verification
+
+[REPORT.md](REPORT.md) contains the five assignment sections and the exact
+before/after table. [docs/evidence/final-run.json](docs/evidence/final-run.json)
+records the clean source commit, pinned environment, hashes, and run status.
+To check the saved numerical artifacts without fitting or scoring models anew:
+
+```bash
+python -m src.verify_results
+```
+
+The three Edit fault experiments and the fourth blocked Bash attempt are
+recorded separately in `docs/SEEDED_FAULTS.md`. The own-repository SDK audit
+remains the final local execution step before submission.

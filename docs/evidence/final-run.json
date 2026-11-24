@@ -1,0 +1,114 @@
+{
+  "started_at_utc": "2026-11-24T23:49:05.566647+00:00",
+  "source_commit": "af4e0962caddcb0bd8a824a1df5eaa33ee8935df",
+  "working_tree_clean_before_run": true,
+  "command": "make all",
+  "capture_command": "set -o pipefail; make all 2>&1 | tee docs/evidence/final-pipeline.log",
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "python": "3.12.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "packages": {
+    "numpy": "2.5.3",
+    "pandas": "3.0.5",
+    "pyarrow": "26.0.1",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1",
+    "joblib": "1.6.0",
+    "threadpoolctl": "3.8.0",
+    "pytest": "9.1.1",
+    "claude-agent-sdk": "0.2.172"
+  },
+  "source_sha256": {
+    "requirements.txt": "7c3d9f546b45089b5026772eabb73931ab08848c861cf4aa7b84b80db03cdd4f",
+    "Makefile": "d46e449015bbfd6db7c1a6eda19fdf5075a4b9254a3bd30c95af302968bb8bd3",
+    "src/config.py": "bce4c7fa9940ca51ed6037e3ef6e28a4fd81d61bf68db54167f31417eb0b7358",
+    "src/ingest.py": "5712fb51792bae5a97d554cc49f34daaaff0302c92b19c16f9f99bd5de6d6199",
+    "src/features.py": "fe90841402e4827989c473804b1671615f05eb24f55e41fd5721c30f247e820b",
+    "src/train.py": "10aa68261b7fd337e3c82600dfd17b8870c6ce979c110c2a8a7109dbeb3422a0",
+    "docs/FINAL_SELECTION.md": "bcfd0edbd8c0ce77a168300f416cb540ff23483eca3c0f870c0c5b084b157566"
+  },
+  "raw_sha256": "a6bed1577f6e4de56dcfae6d8315985073cc0ad3446c8c99ed60c86a0b5ad9dc",
+  "selected_feature_set": "before_feature",
+  "selected_model": "ridge",
+  "target_transformation": "none",
+  "scope": "One fixed untransformed before/after run on 2011 training, H1 validation and H2 test; no selection from H2.",
+  "artifacts_recorded_at_utc": "2026-11-24T23:50:44.744815+00:00",
+  "pipeline_exit_code": 0,
+  "artifacts_sha256": {
+    "reports/metrics.json": "f6e00b05e01590e8c223e4a7fe7d9b149eb18fa88d24f0cc41e2bc5797e73902",
+    "reports/predictions.csv": "8d6c85a2ef28cb124526f9c06ddd3f999a0913fa67777fead01e7cce3c36817c",
+    "docs/evidence/final-pipeline.log": "35dbe5f9b4cf5ac6d370f0dcc44672c44e47d1e1ce0501cafe5c52296e7faa5a",
+    "docs/evidence/final-artifact-checks.log": "3df8183a2067276924dd5602ac472a14526efbac3cde440f0004de9958c8e166",
+    "src/verify_results.py": "b41a335494164badb575cde57d286c2ec44d7e68eb991265750a9e52b7a0b9e7"
+  },
+  "verification_command": "python -m src.verify_results",
+  "verification_exit_code": 0,
+  "verification_refits_models": false,
+  "observed_rows": {
+    "raw": 728,
+    "features": 714,
+    "train": 348,
+    "valid": 182,
+    "test": 184,
+    "predictions": 366
+  },
+  "removed_observed_dates": [
+    "2011-01-03",
+    "2011-01-04",
+    "2011-01-05",
+    "2011-01-06",
+    "2011-01-07",
+    "2011-01-08",
+    "2011-01-09",
+    "2011-03-11",
+    "2011-03-12",
+    "2011-03-13",
+    "2011-03-14",
+    "2011-03-15",
+    "2011-03-16",
+    "2011-03-17"
+  ],
+  "target_summary": {
+    "train": {
+      "mean": 3493.4540229885056,
+      "min": 431.0,
+      "max": 6043.0
+    },
+    "valid": {
+      "mean": 5152.06043956044,
+      "min": 1027.0,
+      "max": 8362.0
+    },
+    "test": {
+      "mean": 6042.940217391304,
+      "min": 22.0,
+      "max": 8714.0
+    }
+  },
+  "before_feature_test_prediction_summary": {
+    "baseline_mean": {
+      "mean": 3493.454022988505,
+      "min": 3493.4540229885056,
+      "max": 3493.4540229885056
+    },
+    "baseline_persistence": {
+      "mean": 6059.016304347826,
+      "min": 22.0,
+      "max": 8714.0
+    },
+    "ridge": {
+      "mean": 5487.626761428144,
+      "min": 868.9896827091156,
+      "max": 7471.009617421163
+    },
+    "hgb": {
+      "mean": 4233.335853220646,
+      "min": 1055.0082815525834,
+      "max": 5536.96337280342
+    }
+  }
+}
