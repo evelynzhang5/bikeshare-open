@@ -1,0 +1,6 @@
+baseline_mean: validation R2=-0.9318, MAE=2002.2
+baseline_persistence: validation R2=0.4507, MAE=900.6
+ridge: validation R2=0.6475, MAE=832.9
+hgb: validation R2=0.2185, MAE=1296.6
+hgb_daily_change: validation R2=0.6079, MAE=834.3
+OK target validation: 348 train, 182 valid, 14 inputs; 0 held-out predictions

@@ -1,0 +1,7 @@
+Verified: all 5 metric rows reproduce from the 182 saved H1 predictions.
+Verified: original models and baselines match the previous 14-input validation run exactly.
+Verified: recorded source and raw-data SHA-256 hashes match the files used.
+HGB R2 gain: 0.3894738471341084
+HGB MAE reduction: 462.307071420732
+Transformed HGB minus Ridge MAE: 1.365743411285166
+Held-out prediction rows: 0

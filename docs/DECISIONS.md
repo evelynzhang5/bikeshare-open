@@ -18,3 +18,9 @@ Agents append here via the `/new-feature` skill; you append here by hand.
 [2026-11-17] Added an unknown-weather regression test so removing the encoder's explicit error check will produce a failing test.
 
 [2026-11-18] Added seed-fault, drafted with ChatGPT assistance, to standardize fault injection, evidence capture, and restoration; documented its usage in CLAUDE.md.
+
+[2026-11-23] `cnt_roll_3` uses counts from the three previous calendar days, available for a one-day prediction. The recorded H1 comparison changed Ridge R2 by -0.0036385 and MAE by +3.5490, and HGB R2 by -0.0202049 and MAE by +14.9810. Use the original 14 inputs for Exercise 4; recommend dropping the candidate from the selected model, while retaining its implementation and test-first evidence. The default feature builder remains unchanged.
+
+[2026-11-23] Exercise 4 (ChatGPT/Codex-assisted): train HGB on `cnt - cnt_lag_1` and add the known lag back before scoring. H1 R2 improved from 0.2185 to 0.6079 and MAE from 1296.6 to 834.3; Ridge remained better at R2 0.6475 and MAE 832.9. This is a defensible persistence-plus-correction model for sequential one-day prediction, conditional on the existing observed-weather inputs; it does not establish operational day-ahead performance. Tried one specified transformation with unchanged hyperparameters and no H2 scoring; preserve the untransformed pipeline for final metrics.
+
+[2026-11-23] Added validation-only target experimentation, reconstruction, and held-out evaluation rules to CLAUDE.md. The file remains under 60 lines. Original source/data hashes, actual metrics, prediction rows, and verification logs are recorded in docs/EXERCISE4_VALIDATION.md and docs/evidence/.
