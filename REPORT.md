@@ -143,8 +143,18 @@ Verification before final scoring recorded **24 passing tests**. The fourth
 Bash-copy experiment was blocked before execution; it is documented as a
 blocked attempt, not a demonstrated hook bypass. A later ingestion SHA-256
 guard and temporary-copy test add protection without altering that history.
-The required own-repository SDK audit remains pending on the Mac's local
-Ollama endpoint. No `reports/audit.jsonl` is fabricated here: after `make audit`,
-its actual findings must be addressed or explained in this report before
-submission. The student must review and adopt the methodological verdicts
-and this AI-assisted draft.
+
+The own-repository SDK audit completed on the Mac's local Ollama endpoint at
+commit `08f33aaf3826e65e2926e6a2dc361ddbd8be1edb`. Its actual
+[JSON output](reports/audit.jsonl) reports `leakage: none`,
+`temporal_ok: true`, `baseline_reported: true`, `reproducible: true`, no
+findings, and high confidence. The terminal reported one completed attempt,
+zero failures, and zero leakage flags. The JSON was copied unchanged from
+the user's displayed file contents; this was not a new cloud-model audit.
+The reported Git status showed only the two untracked audit output files.
+
+There are no flagged findings to rebut. The auditor's clean verdict is a
+screening result, not evidence that realized weather is available before
+prediction or that Ridge should replace persistence. Those limitations and
+the blocked fourth experiment remain disclosed. The student must review and
+adopt the methodological verdicts and this AI-assisted report.

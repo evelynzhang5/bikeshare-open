@@ -57,12 +57,31 @@ it inspects the SDK's transport and **does not call an LLM or perform an audit**
 The tests also cover CSV/Parquet identity checks, report validation, and failure
 log preservation. No forecasting models were fitted or scored.
 
-## Remaining local run
+## Completed local rerun
 
-Pull this repair on the existing PR branch, activate `.venv`, and run `make audit`.
-Keep the real failure logs if it still fails. Only a successful, schema-valid
-response produces the required `reports/audit.jsonl`; review its findings and
-address or explain them in `REPORT.md` before submission. The Mac's Ollama run
-has not been reproduced in this cloud workspace.
+The user pulled the repair and reran `make audit` on the Mac at commit
+`08f33aaf3826e65e2926e6a2dc361ddbd8be1edb`. The supplied terminal summary was:
+
+```text
+attempted 1; completed 1; failed 0; flagged among completed 0 -> reports/audit.jsonl
+```
+
+The user then supplied the result of `cat reports/audit.jsonl` and
+`git status --short`. The exact JSON line is preserved in
+[reports/audit.jsonl](../reports/audit.jsonl). It reports no leakage,
+all three boolean checks true, an empty findings list, and high confidence.
+The reported status was:
+
+```text
+?? reports/audit.failed.jsonl
+?? reports/audit.jsonl
+```
+
+Thus the reported status showed no tracked-file changes after the run.
+The original failed attempt remains separately documented above. The successful
+output is evidence from the user's actual local run, copied from the supplied
+terminal contents, not a result generated or inferred in this cloud workspace.
+`REPORT.md` records the verdict without using it to dismiss the benchmark's
+weather-availability limitation or the blocked fourth experiment.
 
 This repair and its tests were prepared with ChatGPT/Codex assistance.

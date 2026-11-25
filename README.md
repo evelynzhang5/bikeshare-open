@@ -157,5 +157,7 @@ python -m src.verify_results
 ```
 
 The three Edit fault experiments and the fourth blocked Bash attempt are
-recorded separately in `docs/SEEDED_FAULTS.md`. The own-repository SDK audit
-remains the final local execution step before submission.
+recorded separately in `docs/SEEDED_FAULTS.md`. The completed own-repository
+SDK audit is committed in `reports/audit.jsonl`, with its reviewed commit
+recorded inside the JSON. Its clean verdict does not remove the limitations
+discussed in `REPORT.md`.
