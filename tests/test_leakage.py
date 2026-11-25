@@ -4,10 +4,13 @@ test_no_forbidden_features is the single most valuable test in this repo:
 casual + registered == cnt exactly, so any model handed those columns
 scores R^2 = 1.0 and looks brilliant while having learned nothing.
 """
+from itertools import combinations
+
+import numpy as np
 import pandas as pd
 import pytest
 
-from src.config import FORBIDDEN, TARGET
+from src.config import FORBIDDEN, LEAKAGE_COLS, TARGET
 from src.features import build_features, feature_columns, encode_weather
 from src.ingest import load_raw
 
@@ -79,3 +82,28 @@ def test_unknown_weather_label_raises():
     labels = pd.Series(["GOOD", "MISTY", "BAD", "UNEXPECTED"])
     with pytest.raises(ValueError, match="unmapped weather labels"):
         encode_weather(labels)
+
+
+def test_features_do_not_reconstruct_same_day_counts(feats):
+    """Catch renamed, rescaled, or combined copies of unavailable same-day counts.
+
+    Inspect actual numeric values, including combinations of up to three inputs.
+    This bounds the check; it is not a proof against arbitrary nonlinear leaks.
+    """
+    columns = feature_columns(feats)
+    forbidden_targets = sorted(LEAKAGE_COLS)
+    values = feats[columns].to_numpy(dtype=float)
+    targets = feats[forbidden_targets].to_numpy(dtype=float)
+    for size in range(1, min(3, len(columns)) + 1):
+        for positions in combinations(range(len(columns)), size):
+            design = np.column_stack([values[:, positions], np.ones(len(feats))])
+            coefficients, *_ = np.linalg.lstsq(design, targets, rcond=None)
+            residual = np.abs(design @ coefficients - targets).max(axis=0)
+            reconstructed = [
+                name for name, error in zip(forbidden_targets, residual)
+                if error < 1e-6
+            ]
+            names = [columns[position] for position in positions]
+            assert not reconstructed, (
+                f"inputs {names} reconstruct unavailable same-day counts: {reconstructed}"
+            )

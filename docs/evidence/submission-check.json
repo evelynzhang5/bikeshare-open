@@ -1,0 +1,39 @@
+{
+  "review_date": "2026-11-25",
+  "reviewed_main_commit": "87c0130366ff3316f401aeab9c145b6bd58fdb2f",
+  "first_commit": "26f253fd3f29839644184a05d16cd6f236a7f271",
+  "claude_md_lines_after_guard": 53,
+  "report_word_count_before_guard_note": 1345,
+  "checks": {
+    "first_commit_matches_starter_zip": true,
+    "no_starter_files_removed": true,
+    "original_five_decisions_preserved": true,
+    "raw_unchanged_from_starter": true,
+    "raw_canonical_hash": true,
+    "no_generated_caches_or_venv_tracked": true,
+    "reports_tracked": true,
+    "generated_directories_ignored": true,
+    "claude_under_60_lines": true,
+    "own_skill_accepts_arguments": true,
+    "starter_new_feature_skill_retained": true,
+    "hook_wiring_preserved": true,
+    "starter_permission_denials_preserved": true,
+    "hook_script_preserved": true,
+    "report_exactly_five_required_sections": true,
+    "report_32_table_values_match_metrics": true,
+    "frozen_pipeline_files_match_recorded_run": true,
+    "frozen_result_artifacts_match_recorded_run": true,
+    "peer_capture_hash_matches": true,
+    "peer_capture_preserved_verbatim": true,
+    "own_audit_required_fields_present": true,
+    "own_audit_exact_user_supplied_bytes": true,
+    "own_audit_pinned_to_actual_run": true,
+    "feature_test_commit_precedes_implementation": true
+  },
+  "scope": "Static/file/commit/evidence verification. Frozen source and artifact hashes were checked against the actual earlier make all manifest; make all was not rerun. Local test logs are recorded separately. No new LLM audit was run.",
+  "unresolved": [
+    "Fourth Bash-copy attempt was denied before execution; no successful fourth injection is claimed.",
+    "Historical forbidden-hook text is explicitly a transcription, not byte-exact stderr.",
+    "Instructor acceptance and course-form submission have not been verified."
+  ]
+}

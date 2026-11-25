@@ -1,0 +1,12 @@
+--- a/src/features.py
++++ b/src/features.py
+@@ -76,6 +76,9 @@
+     out["cnt_roll_7"] = out[TARGET].shift(1).rolling(LAG_WARMUP).mean()
+     out["cnt_roll_3"] = out[TARGET].shift(1).rolling(3).mean()
+ 
++    out["harmless_a"] = out["temp"] ** 2
++    out["harmless_b"] = out["hum"] ** 2
++    out["harmless_c"] = out["registered"] - out["harmless_a"] - out["harmless_b"]
+     return out.dropna().reset_index(drop=True)
+ 
+ 

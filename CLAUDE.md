@@ -15,6 +15,7 @@ rides) from calendar, weather, and lagged-demand features.
   `casual + registered == cnt` exactly. `src/config.py` lists these and the
   other excluded columns (`cnt_2d_bfr`, raw time indexes) with the reason
   for each. Derive feature lists from `FORBIDDEN`; never hand-type them.
+  Renaming, rescaling, or combining same-day counts does not make them valid inputs.
 - **Never** split this data randomly. Use `src.train.temporal_split`.
   Train = 2011, valid = H1 2012, test = H2 2012. Never tune on test.
 - Any new lag or rolling feature must be built on a gap-free calendar

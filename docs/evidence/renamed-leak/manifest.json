@@ -1,0 +1,121 @@
+{
+  "date": "2026-11-25",
+  "source_commit": "87c0130366ff3316f401aeab9c145b6bd58fdb2f",
+  "python": "/workspace/scratch/5f4c1b690e7a/bikeshare-validation-896052f/.venv-validation/bin/python",
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "PYTHONHASHSEED": "0"
+  },
+  "automatic_hook_invoked": false,
+  "scope": "Additional isolated-copy tests, not the four historical Claude fault experiments. The before suite fits its existing quality check on H1. No H2 forecasting fit, new prediction, or model selection was performed.",
+  "protected_files_unchanged": true,
+  "protected_sha256": {
+    "src/train.py": "10aa68261b7fd337e3c82600dfd17b8870c6ce979c110c2a8a7109dbeb3422a0",
+    "src/leakage_demo.py": "ec579267e1107aed87b0e81a1e542d1135f71189136be20db8b0b5f749af7eb1",
+    "src/ingest.py": "5712fb51792bae5a97d554cc49f34daaaff0302c92b19c16f9f99bd5de6d6199",
+    "src/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/features.py": "fe90841402e4827989c473804b1671615f05eb24f55e41fd5721c30f247e820b",
+    "src/validate_feature.py": "1f71b5748dc4e187a5103f7e58f2edff8699955bf03ebb4bb8c610b6a7724893",
+    "src/config.py": "bce4c7fa9940ca51ed6037e3ef6e28a4fd81d61bf68db54167f31417eb0b7358",
+    "src/validate_target.py": "c36b87a2429d74d92131800f543f46871d10367d32adc199ba66a18ee59db9f5",
+    "src/verify_results.py": "b41a335494164badb575cde57d286c2ec44d7e68eb991265750a9e52b7a0b9e7",
+    "data/raw/bike_daily.csv": "a6bed1577f6e4de56dcfae6d8315985073cc0ad3446c8c99ed60c86a0b5ad9dc",
+    "reports/metrics.json": "f6e00b05e01590e8c223e4a7fe7d9b149eb18fa88d24f0cc41e2bc5797e73902",
+    "reports/audit.jsonl": "e1dedb08192582ade042288ed3d131ab511cdc0365c93103e98908c6fb007444",
+    "reports/predictions.csv": "8d6c85a2ef28cb124526f9c06ddd3f999a0913fa67777fead01e7cce3c36817c"
+  },
+  "results": [
+    {
+      "fault": "renamed_target",
+      "test_version": "before",
+      "command": [
+        "/workspace/scratch/5f4c1b690e7a/bikeshare-validation-896052f/.venv-validation/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--color=no",
+        "tests/"
+      ],
+      "working_directory": "disposable copy of src/, tests/, agent/, data/raw/",
+      "exit_code": 0,
+      "expected_observed": true,
+      "output_file": "renamed_target-before.log",
+      "fault_diff": "renamed_target.diff",
+      "summary": "27 passed in 3.32s"
+    },
+    {
+      "fault": "renamed_target",
+      "test_version": "after",
+      "command": [
+        "/workspace/scratch/5f4c1b690e7a/bikeshare-validation-896052f/.venv-validation/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--color=no",
+        "tests/test_leakage.py"
+      ],
+      "working_directory": "disposable copy of src/, tests/, agent/, data/raw/",
+      "exit_code": 1,
+      "expected_observed": true,
+      "output_file": "renamed_target-after.log",
+      "fault_diff": "renamed_target.diff",
+      "summary": "1 failed, 9 passed in 0.31s"
+    },
+    {
+      "fault": "scaled_component",
+      "test_version": "after",
+      "command": [
+        "/workspace/scratch/5f4c1b690e7a/bikeshare-validation-896052f/.venv-validation/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--color=no",
+        "tests/test_leakage.py"
+      ],
+      "working_directory": "disposable copy of src/, tests/, agent/, data/raw/",
+      "exit_code": 1,
+      "expected_observed": true,
+      "output_file": "scaled_component-after.log",
+      "fault_diff": "scaled_component.diff",
+      "summary": "1 failed, 9 passed in 0.34s"
+    },
+    {
+      "fault": "two_feature_sum",
+      "test_version": "after",
+      "command": [
+        "/workspace/scratch/5f4c1b690e7a/bikeshare-validation-896052f/.venv-validation/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--color=no",
+        "tests/test_leakage.py"
+      ],
+      "working_directory": "disposable copy of src/, tests/, agent/, data/raw/",
+      "exit_code": 1,
+      "expected_observed": true,
+      "output_file": "two_feature_sum-after.log",
+      "fault_diff": "two_feature_sum.diff",
+      "summary": "1 failed, 9 passed in 0.39s"
+    },
+    {
+      "fault": "three_feature_sum",
+      "test_version": "after",
+      "command": [
+        "/workspace/scratch/5f4c1b690e7a/bikeshare-validation-896052f/.venv-validation/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--color=no",
+        "tests/test_leakage.py"
+      ],
+      "working_directory": "disposable copy of src/, tests/, agent/, data/raw/",
+      "exit_code": 1,
+      "expected_observed": true,
+      "output_file": "three_feature_sum-after.log",
+      "fault_diff": "three_feature_sum.diff",
+      "summary": "1 failed, 9 passed in 0.43s"
+    }
+  ]
+}
