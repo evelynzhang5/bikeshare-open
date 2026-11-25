@@ -1,0 +1,4 @@
+.....[claude-code:unrecognized_model] {"model":"bikeshare-coder","query_source":"sdk"}
+Captured SDK request controls: [{"model": "bikeshare-coder", "max_tokens": 4096, "thinking": {"type": "disabled"}}, {"model": "bikeshare-coder", "max_tokens": 4096, "thinking": {"type": "disabled"}}]
+.
+6 passed in 2.21s

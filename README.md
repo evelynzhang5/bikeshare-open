@@ -137,6 +137,13 @@ it is not a completed audit. Review valid findings, address or explain them in
 `REPORT.md`, and commit the real `reports/audit.jsonl`. Do not replace it with
 a hand-written verdict.
 
+The audit disables extended thinking explicitly in requests to Ollama and caps
+each response at 4,096 tokens, with a 65,536-token context. It displays tool names
+as progress and reports completed and failed attempts separately. Before replacing
+an existing failure log, it saves that log under a unique `audit.failed-*.jsonl`
+name. The `unrecognized_model` warning alone is not a failure diagnosis; read
+the saved error and exit status. See [the output-limit repair](docs/SDK_AUDIT_REPAIR.md).
+
 
 ## Results and verification
 

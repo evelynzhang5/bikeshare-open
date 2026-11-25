@@ -23,14 +23,17 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 from claude_agent_sdk import (
+    AssistantMessage,
     ClaudeAgentOptions,
     ResultMessage,
+    ToolUseBlock,
     create_sdk_mcp_server,
     query,
     tool,
@@ -115,8 +118,9 @@ docstring or README claim as evidence. Explain coverage limits in findings.
 Evaluate the stated limitation that realized same-day weather is not known
 for operational day-ahead prediction, rather than omitting it from the audit.
 
-Your final answer is a single JSON object matching the schema you were
-given. No prose around it.
+Work directly through these checks. Keep intermediate responses short; do not
+repeat plans or copy whole files into your response. Your final answer is a
+concise JSON object matching the schema you were given. No prose around it.
 """
 
 # Enforced by the SDK: the final turn must validate against this schema and
@@ -150,17 +154,29 @@ REPORT_SCHEMA = {
 }
 
 
-async def audit_repo(repo: Path) -> dict[str, Any]:
-    repo = repo.resolve()
-    print(f"Auditing {repo.name} with {os.environ.get('AUDIT_MODEL', 'bikeshare-coder')}",
-          file=sys.stderr, flush=True)
-    options = ClaudeAgentOptions(
+def audit_options(repo: Path) -> ClaudeAgentOptions:
+    # Claude Code can omit `thinking` for custom model names even with its
+    # native switch disabled. Ollama then uses the model's default (on for
+    # this Qwen build). EXTRA_BODY makes the off switch explicit on the wire.
+    # Verified against the bundled CLI in the pinned SDK using a loopback
+    # request-capture server; that probe did not call a model or audit a repo.
+    controls = {
+        "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "4096",
+        "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "65536",
+        "MAX_THINKING_TOKENS": "0",
+        "CLAUDE_CODE_EXTRA_BODY": json.dumps({"thinking": {"type": "disabled"}}),
+    }
+    return ClaudeAgentOptions(
         system_prompt=SYSTEM,
-        cwd=str(repo),
+        cwd=str(repo.resolve()),
         setting_sources=["project", "local"],
+        env=controls,
+        settings=json.dumps({"env": controls}),
+        thinking={"type": "disabled"},
         tools=["Read", "Grep", "Glob", "Bash"],
         disallowed_tools=["Edit", "Write", "NotebookEdit"],
         mcp_servers={"audit": auditor_tools},
+        strict_mcp_config=True,
         allowed_tools=[
             "Read",
             "Grep",
@@ -177,17 +193,30 @@ async def audit_repo(repo: Path) -> dict[str, Any]:
         stderr=lambda line: print(line, file=sys.stderr, flush=True),
     )
 
+
+async def audit_repo(repo: Path) -> dict[str, Any]:
+    repo = repo.resolve()
+    print(f"Auditing {repo.name} with {os.environ.get('AUDIT_MODEL', 'bikeshare-coder')} "
+          "(thinking off; max output 4096 tokens/response)", file=sys.stderr, flush=True)
+    options = audit_options(repo)
+
     # Only the ResultMessage carries the final answer. Concatenating every
     # intermediate TextBlock ("Let me look at config.py first...") and
     # json.loads-ing the lot fails on the first repo that thinks out loud.
     final: ResultMessage | None = None
     async for message in query(prompt=f"Audit the repo at {repo}.", options=options):
+        if isinstance(message, AssistantMessage):
+            for block in message.content:
+                if isinstance(block, ToolUseBlock):
+                    print(f"Audit tool: {block.name}", file=sys.stderr, flush=True)
         if isinstance(message, ResultMessage):
             final = message
 
     if final is None or final.is_error:
         return {"repo": repo.name, "error": "run_failed",
-                "raw": (final.result or "")[:500] if final else ""}
+                "raw": (final.result or "")[:2000] if final else "No final ResultMessage",
+                "sdk_subtype": final.subtype if final else None,
+                "sdk_errors": final.errors if final else []}
     if final.structured_output is not None:
         data = final.structured_output
     else:
@@ -225,6 +254,31 @@ def validate_report(data: Any) -> None:
             raise ValueError("Invalid finding fields")
 
 
+def save_results(results: list[dict[str, Any]], out: Path) -> int:
+    """Save genuine results, preserve prior failures, and report failure counts."""
+    failed = sum("error" in row for row in results)
+    destination = out.with_suffix(".failed.jsonl") if failed else out
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if failed and destination.exists():
+        with tempfile.NamedTemporaryFile(
+            mode="wb", prefix=destination.stem + "-", suffix=".jsonl",
+            dir=destination.parent, delete=False,
+        ) as previous:
+            previous.write(destination.read_bytes())
+            print(f"Previous failure preserved: {previous.name}", file=sys.stderr)
+    with destination.open("w") as fh:
+        for row in results:
+            fh.write(json.dumps(row) + "\n")
+    completed = [row for row in results if "error" not in row]
+    flagged = sum(row.get("leakage") in {"suspected", "confirmed"} for row in completed)
+    print(f"attempted {len(results)}; completed {len(completed)}; failed {failed}; "
+          f"flagged among completed {flagged} -> {destination}", file=sys.stderr)
+    for row in results:
+        if "error" in row:
+            print(f"FAIL {row['repo']}: {row['error']}: {row.get('raw', '')}", file=sys.stderr)
+    return failed
+
+
 async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("repos", nargs="+", type=Path)
@@ -236,10 +290,16 @@ async def main() -> None:
 
     async def bounded(repo: Path) -> dict[str, Any]:
         async with sem:
+            repo = repo.resolve()
             try:
                 row = await audit_repo(repo)
             except Exception as exc:
-                row = {"repo": repo.name, "error": "run_failed", "raw": str(exc)[:500]}
+                row = {"repo": repo.name, "error": "run_failed", "raw": str(exc)[:2000],
+                       "exception_type": type(exc).__name__,
+                       "sdk_subtype": getattr(exc, "subtype", None),
+                       "sdk_errors": getattr(exc, "errors", []),
+                       "api_error_status": getattr(exc, "api_error_status", None),
+                       "terminal_reason": getattr(exc, "terminal_reason", None)}
             head = subprocess.run(["git", "-C", str(repo.resolve()), "rev-parse", "HEAD"],
                                   capture_output=True, text=True)
             if head.returncode == 0:
@@ -247,16 +307,7 @@ async def main() -> None:
             return row
 
     results = await asyncio.gather(*(bounded(r) for r in ns.repos))
-    failed = any("error" in row for row in results)
-    destination = ns.out.with_suffix(".failed.jsonl") if failed else ns.out
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with destination.open("w") as fh:
-        for row in results:
-            fh.write(json.dumps(row) + "\n")
-
-    flagged = sum(r.get("leakage") in {"suspected", "confirmed"} for r in results)
-    print(f"audited {len(results)} repos; {flagged} flagged -> {destination}", file=sys.stderr)
-    if failed:
+    if save_results(results, ns.out):
         raise SystemExit(1)
 
 
