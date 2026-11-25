@@ -537,3 +537,28 @@ A SHA-256 comparison against the trusted original CSV during ingestion or make d
 ### Attribution
 
 The experiment helper and this evidence-recording script were drafted with ChatGPT assistance. Test output and JSON records above were read from the saved execution evidence; the permission denial was transcribed from the displayed tool result. The recorder did not rerun tests or models.
+
+
+## Later protection: ingestion hash guard (2026-11-24)
+
+The blocked Bash attempt above remains a blocked attempt. No raw-data fault
+was injected again. In freeze commit `af4e0962caddcb0bd8a824a1df5eaa33ee8935df`,
+`load_raw()` gained a SHA-256 comparison against the original committed CSV,
+before parsing. `make data` and the data stage of `make all` now reject altered
+bytes even if the change occurred outside the Edit/Write PostToolUse hook.
+This is detection at ingestion, not a claim that the hook sees Bash copies.
+
+The [actual Git diff](evidence/raw-integrity-guard.diff) was captured with:
+
+```bash
+git diff c629cd1fa165b25c7733df5921d3d08476c957aa af4e0962caddcb0bd8a824a1df5eaa33ee8935df -- src/config.py src/ingest.py tests/test_contract.py
+```
+
+That diff includes the other frozen changes to these files as well.
+`test_ingest_rejects_modified_raw_copy` adds a newline to a temporary copy,
+redirects ingestion to that copy, and expects the hash-mismatch ValueError.
+The repository's raw CSV is never edited by this test. It passed as part of
+the actual [24-test run](evidence/final-prefreeze-tests.log), run with
+`make test` under the pinned environment. The final pipeline and artifact
+verification also confirm the original raw SHA-256 is unchanged. This does
+not supply missing execution or hook evidence for the earlier denied copy.

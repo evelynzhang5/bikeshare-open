@@ -1,0 +1,1 @@
+{"repo": "bikeshare-open", "leakage": "none", "temporal_ok": true, "baseline_reported": true, "reproducible": true, "findings": [], "confidence": "high", "audited_commit": "08f33aaf3826e65e2926e6a2dc361ddbd8be1edb"}

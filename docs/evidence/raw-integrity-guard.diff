@@ -1,0 +1,86 @@
+diff --git a/src/config.py b/src/config.py
+index 3065c31..c62879a 100644
+--- a/src/config.py
++++ b/src/config.py
+@@ -5,6 +5,13 @@ ROOT = Path(__file__).resolve().parents[1]
+ RAW = ROOT / "data" / "raw" / "bike_daily.csv"
+ PROCESSED = ROOT / "data" / "processed" / "features.parquet"
+ METRICS = ROOT / "reports" / "metrics.json"
++PREDICTIONS = ROOT / "reports" / "predictions.csv"
++RAW_SHA256 = "a6bed1577f6e4de56dcfae6d8315985073cc0ad3446c8c99ed60c86a0b5ad9dc"
++
++# Frozen from validation results before final H2 scoring.
++ABLATION_FEATURE = "cnt_roll_3"
++SELECTED_FEATURE_SET = "before_feature"
++SELECTED_MODEL = "ridge"
+ 
+ # Daily Capital Bikeshare counts (Fanaee-T & Gama). Canonical home:
+ #   https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset
+diff --git a/src/ingest.py b/src/ingest.py
+index 6654075..deed608 100644
+--- a/src/ingest.py
++++ b/src/ingest.py
+@@ -2,12 +2,13 @@
+ 
+ Run: python -m src.ingest
+ """
++import hashlib
+ import sys
+ import urllib.request
+ 
+ import pandas as pd
+ 
+-from src.config import DATA_URL, RAW
++from src.config import DATA_URL, RAW, RAW_SHA256
+ 
+ EXPECTED_MIN_ROWS = 700
+ REQUIRED_COLS = {"dteday", "cnt", "casual", "registered", "temp", "hum", "windspeed"}
+@@ -21,6 +22,8 @@ def download(force: bool = False) -> None:
+ 
+ 
+ def load_raw() -> pd.DataFrame:
++    if hashlib.sha256(RAW.read_bytes()).hexdigest() != RAW_SHA256:
++        raise ValueError("raw CSV hash mismatch: restore the committed original")
+     df = pd.read_csv(RAW, parse_dates=["dteday"])
+     missing = REQUIRED_COLS - set(df.columns)
+     if missing:
+diff --git a/tests/test_contract.py b/tests/test_contract.py
+index ec39527..f0850af 100644
+--- a/tests/test_contract.py
++++ b/tests/test_contract.py
+@@ -1,6 +1,7 @@
+ """Guard rails on the ingest contract and the trained model's behaviour."""
+ import pandas as pd
+ import pytest
++from sklearn.base import clone
+ from sklearn.metrics import r2_score
+ 
+ from src.config import LAG_WARMUP, TARGET
+@@ -53,12 +54,23 @@ def test_only_expected_rows_are_dropped(raw, feats):
+ 
+ 
+ def test_beats_the_mean_baseline(feats):
+-    """A model that cannot beat predicting the training mean is not a result."""
++    """Model quality is checked on validation, not repeatedly on held-out data."""
+     cols = feature_columns(feats)
+-    train, _, test = temporal_split(feats)
+-    ridge = MODELS["ridge"]
++    train, valid, _ = temporal_split(feats)
++    ridge = clone(MODELS["ridge"])
+     ridge.fit(train[cols], train[TARGET])
+-    assert r2_score(test[TARGET], ridge.predict(test[cols])) > 0.4
++    assert r2_score(valid[TARGET], ridge.predict(valid[cols])) > 0.4
++
++
++def test_ingest_rejects_modified_raw_copy(tmp_path, monkeypatch):
++    from src import ingest
++
++    altered = tmp_path / "bike_daily.csv"
++    # An extra newline is valid CSV, so shape/type checks alone would miss it.
++    altered.write_bytes(ingest.RAW.read_bytes() + b"\n")
++    monkeypatch.setattr(ingest, "RAW", altered)
++    with pytest.raises(ValueError, match="raw CSV hash mismatch"):
++        ingest.load_raw()
+ 
+ 
+ def test_persistence_baseline_is_reported():

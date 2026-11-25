@@ -1,12 +1,12 @@
 # Bikeshare demand capstone
 
-Reference repository for the DSC 180A methodology lesson on agentic
-programming. Forecasts daily Capital Bikeshare ridership (`cnt`) for
-Washington, DC, 2011-2012, with a leakage trap in the data.
+DSC 180A methodology assignment on agentic programming. Forecasts daily
+Capital Bikeshare ridership (`cnt`) for Washington, DC, 2011-2012, with a
+documented leakage trap, feature ablation, and target-transformation experiment.
 
-The agent is Claude Code driving an **open-weight model running on your own
-machine** through Ollama. No Anthropic account, subscription, or API key is
-needed. Nothing leaves your laptop.
+The original agent workflow used Claude Code with an open-weight model through
+local Ollama. ChatGPT/Codex also assisted with repairs, validation experiments,
+and reporting; those runs used a cloud environment, as recorded in the evidence.
 
 ## Setup
 
@@ -22,7 +22,7 @@ needed. Nothing leaves your laptop.
     make model          # pulls the base model, builds `bikeshare-coder` with a 64k context
     make check-model    # confirms Claude Code can reach it and that tool calls work
     make all            # data -> features -> train, writes reports/metrics.json
-    make test           # 14 tests
+    make test           # structural checks and H1 model-quality check
 
     # 4. Start the agent, from the repo root
     claude
@@ -33,7 +33,8 @@ names the model, so `claude` works with no environment variables. Run
 
 ### Which base model
 
-`make model` builds from `qwen3.5:9b` by default. Pick by memory:
+`make model` builds from `qwen3.5:9b-q4_K_M` by default in this project.
+The original assignment's model-size alternatives are listed below:
 
 | Your machine | Base model | `make model` command |
 |---|---|---|
@@ -89,3 +90,74 @@ skill the lesson builds in Steps 7-8. `model/` holds the Modelfile and the
 readiness check. `agent/audit.py` is the Agent SDK batch auditor from Part 4;
 it uses the same local endpoint (`AUDIT_MODEL` overrides the model). Record
 methodological decisions in `docs/DECISIONS.md`.
+
+## Reproduce the final forecasting comparison
+
+The numerical pipeline does not require Ollama or a running language model:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+make all
+make test
+```
+
+`make all` writes eight untransformed model rows to `reports/metrics.json`:
+four methods under `before_feature` (14 inputs) and `after_feature` (15 inputs).
+It also writes the predictions to `reports/predictions.csv`. Both use training
+data from 2011, H1 2012 validation, and H2 2012 test. The selected configuration
+is fixed in `src/config.py`; test performance does not select it. Ordinary
+quality tests use H1. The final choices are in `docs/FINAL_SELECTION.md`.
+
+Keep `data/raw/bike_daily.csv` unchanged. Ingestion checks its canonical SHA-256
+before using it. Processed data, virtual environments, and caches remain ignored;
+the report outputs are tracked.
+
+## Complete the local SDK audit
+
+After the final code and report are present, activate the environment and ensure
+the local `bikeshare-coder` model is available through Ollama, then run:
+
+```bash
+make audit
+```
+
+This rebuilds features and runs `python agent/audit.py . --out reports/audit.jsonl`
+against this checkout. The auditor reads project/local endpoint settings. Its
+instructions use the saved final predictions and structural checks, without
+refitting forecasting models. Its identity tool accepts the processed Parquet
+file. Built-in Edit/Write tools are unavailable, but Bash is not a filesystem
+sandbox.
+
+The final JSON line must come from that actual run. A failed or malformed model
+response is saved as `reports/audit.failed.jsonl` and returns a nonzero status;
+it is not a completed audit. Review valid findings, address or explain them in
+`REPORT.md`, and commit the real `reports/audit.jsonl`. Do not replace it with
+a hand-written verdict.
+
+The audit disables extended thinking explicitly in requests to Ollama and caps
+each response at 4,096 tokens, with a 65,536-token context. It displays tool names
+as progress and reports completed and failed attempts separately. Before replacing
+an existing failure log, it saves that log under a unique `audit.failed-*.jsonl`
+name. The `unrecognized_model` warning alone is not a failure diagnosis; read
+the saved error and exit status. See [the output-limit repair](docs/SDK_AUDIT_REPAIR.md).
+
+
+## Results and verification
+
+[REPORT.md](REPORT.md) contains the five assignment sections and the exact
+before/after table. [docs/evidence/final-run.json](docs/evidence/final-run.json)
+records the clean source commit, pinned environment, hashes, and run status.
+To check the saved numerical artifacts without fitting or scoring models anew:
+
+```bash
+python -m src.verify_results
+```
+
+The three Edit fault experiments and the fourth blocked Bash attempt are
+recorded separately in `docs/SEEDED_FAULTS.md`. The completed own-repository
+SDK audit is committed in `reports/audit.jsonl`, with its reviewed commit
+recorded inside the JSON. Its clean verdict does not remove the limitations
+discussed in `REPORT.md`.

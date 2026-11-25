@@ -1,6 +1,7 @@
 """Guard rails on the ingest contract and the trained model's behaviour."""
 import pandas as pd
 import pytest
+from sklearn.base import clone
 from sklearn.metrics import r2_score
 
 from src.config import LAG_WARMUP, TARGET
@@ -53,12 +54,23 @@ def test_only_expected_rows_are_dropped(raw, feats):
 
 
 def test_beats_the_mean_baseline(feats):
-    """A model that cannot beat predicting the training mean is not a result."""
+    """Model quality is checked on validation, not repeatedly on held-out data."""
     cols = feature_columns(feats)
-    train, _, test = temporal_split(feats)
-    ridge = MODELS["ridge"]
+    train, valid, _ = temporal_split(feats)
+    ridge = clone(MODELS["ridge"])
     ridge.fit(train[cols], train[TARGET])
-    assert r2_score(test[TARGET], ridge.predict(test[cols])) > 0.4
+    assert r2_score(valid[TARGET], ridge.predict(valid[cols])) > 0.4
+
+
+def test_ingest_rejects_modified_raw_copy(tmp_path, monkeypatch):
+    from src import ingest
+
+    altered = tmp_path / "bike_daily.csv"
+    # An extra newline is valid CSV, so shape/type checks alone would miss it.
+    altered.write_bytes(ingest.RAW.read_bytes() + b"\n")
+    monkeypatch.setattr(ingest, "RAW", altered)
+    with pytest.raises(ValueError, match="raw CSV hash mismatch"):
+        ingest.load_raw()
 
 
 def test_persistence_baseline_is_reported():
