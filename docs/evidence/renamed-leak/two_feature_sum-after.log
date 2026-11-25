@@ -1,0 +1,40 @@
+.........F                                                               [100%]
+=================================== FAILURES ===================================
+_______________ test_features_do_not_reconstruct_same_day_counts _______________
+
+feats =         dteday  instant  season  ...   cnt_roll_3 harmless_a   harmless_b
+0   2011-01-10     10.0  WINTER  ...  1097.0....193791  1779.806209
+713 2012-12-31    731.0  WINTER  ...  2077.333333   4.597384  2724.402616
+
+[714 rows x 31 columns]
+
+    def test_features_do_not_reconstruct_same_day_counts(feats):
+        """Catch renamed, rescaled, or combined copies of unavailable same-day counts.
+    
+        Inspect actual numeric values, including combinations of up to three inputs.
+        This bounds the check; it is not a proof against arbitrary nonlinear leaks.
+        """
+        columns = feature_columns(feats)
+        forbidden_targets = sorted(LEAKAGE_COLS)
+        values = feats[columns].to_numpy(dtype=float)
+        targets = feats[forbidden_targets].to_numpy(dtype=float)
+        for size in range(1, min(3, len(columns)) + 1):
+            for positions in combinations(range(len(columns)), size):
+                design = np.column_stack([values[:, positions], np.ones(len(feats))])
+                coefficients, *_ = np.linalg.lstsq(design, targets, rcond=None)
+                residual = np.abs(design @ coefficients - targets).max(axis=0)
+                reconstructed = [
+                    name for name, error in zip(forbidden_targets, residual)
+                    if error < 1e-6
+                ]
+                names = [columns[position] for position in positions]
+>               assert not reconstructed, (
+                    f"inputs {names} reconstruct unavailable same-day counts: {reconstructed}"
+                )
+E               AssertionError: inputs ['harmless_a', 'harmless_b'] reconstruct unavailable same-day counts: ['cnt']
+E               assert not ['cnt']
+
+tests/test_leakage.py:107: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_features_do_not_reconstruct_same_day_counts
+1 failed, 9 passed in 0.39s

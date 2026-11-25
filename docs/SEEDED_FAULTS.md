@@ -562,3 +562,56 @@ the actual [24-test run](evidence/final-prefreeze-tests.log), run with
 `make test` under the pinned environment. The final pipeline and artifact
 verification also confirm the original raw SHA-256 is unchanged. This does
 not supply missing execution or hook evidence for the earlier denied copy.
+
+
+## Additional rubric check: renamed same-day counts (2026-11-25)
+
+This is separate from the four historical Claude experiments above. Codex ran
+these probes in disposable copies of `src/`, `tests/`, `agent/`, and `data/raw/`.
+The submitted feature source and raw data were not edited. No automatic
+PostToolUse hook was invoked, and no hook stderr is claimed for these checks.
+
+At starting commit `87c0130366ff3316f401aeab9c145b6bd58fdb2f`, inserting
+`out["harmless_feature"] = out[TARGET]` immediately before the feature builder's
+return left the **entire old suite green: 27 passed**. Names alone therefore did
+not enforce the rubric's renamed-leak case.
+
+The new `test_features_do_not_reconstruct_same_day_counts` checks actual model
+inputs against `cnt`, `casual`, and `registered`. It rejects exact affine
+reconstruction (maximum residual below 1e-6 rides) from up to three input columns.
+This is a bounded check, not a proof against arbitrary nonlinear transformations,
+more than three jointly leaking inputs, or intentionally noisy leaks.
+
+| Probe with new guard | Actual result |
+| --- | --- |
+| Renamed copy of today's `cnt` | 1 failed, 9 passed in 0.31s |
+| Rescaled `casual` plus an intercept | 1 failed, 9 passed in 0.34s |
+| Two features whose sum is today's `cnt` | 1 failed, 9 passed in 0.39s |
+| Three features whose sum is today's `registered` | 1 failed, 9 passed in 0.43s |
+
+Each failure was the new reconstruction assertion, not a syntax/import error.
+The [manifest](evidence/renamed-leak/manifest.json) records each command and
+numeric exit status. The before command was `python -m pytest -q --color=no tests/`;
+the after commands were `python -m pytest -q --color=no tests/test_leakage.py`.
+The manifest preserves the exact interpreter path used. Logs are complete
+stdout/stderr captures; diff files are literal unified diffs computed from
+the source and its temporary modified copy, not Git output or hand-written snippets.
+
+- Renamed target: [diff](evidence/renamed-leak/renamed_target.diff),
+  [old suite output](evidence/renamed-leak/renamed_target-before.log),
+  [new guard failure](evidence/renamed-leak/renamed_target-after.log).
+- Rescaled component: [diff](evidence/renamed-leak/scaled_component.diff),
+  [failure](evidence/renamed-leak/scaled_component-after.log).
+- Two-feature sum: [diff](evidence/renamed-leak/two_feature_sum.diff),
+  [failure](evidence/renamed-leak/two_feature_sum-after.log).
+- Three-feature sum: [diff](evidence/renamed-leak/three_feature_sum.diff),
+  [failure](evidence/renamed-leak/three_feature_sum-after.log).
+
+The clean working copy passed `make test`: [28 passed in 3.30s](evidence/renamed-leak-clean-tests.log).
+Each temporary edit was restored before disposal, and source/raw/report hashes
+in the manifest confirm the working copy's protected files did not change.
+No corrective Claude Edit calls were needed because these were isolated Python
+probes, not agent repair trials. The full suite includes its existing H1-only
+quality fit; no H2 model was refitted, no new predictions were generated, and no
+model choice was revised. These checks do not supply the missing successful
+execution of the fourth Bash-copy attempt.
